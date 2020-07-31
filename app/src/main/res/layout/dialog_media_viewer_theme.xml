@@ -141,14 +141,6 @@
                         android:paddingLeft="16dp"
                         android:paddingRight="16dp">
 
-                        <uz.shift.colorpicker.LineColorPicker
-                            xmlns:app="http://schemas.android.com/apk/res-auto"
-                            android:id="@+id/pickerTransparent"
-                            android:layout_width="match_parent"
-                            android:layout_height="60dp"
-                            app:orientation="horizontal"
-                            app:selectedColorIndex="0" />
-
                     </RelativeLayout>
             </LinearLayout>
         </LinearLayout>

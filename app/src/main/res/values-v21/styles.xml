@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="android:ThemeOverlay.Material.Dark">
+
+    <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="windowActionBarOverlay">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
+
 </resources>

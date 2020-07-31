@@ -16,8 +16,6 @@ import org.horaapps.liz.ColorPalette;
 import org.horaapps.liz.ThemedActivity;
 import org.horaapps.liz.ui.ThemedIcon;
 
-import uz.shift.colorpicker.LineColorPicker;
-
 /**
  * Created by dnld on 12/9/16.
  */
@@ -51,10 +49,6 @@ public class SinglePhotoSetting extends ThemedSetting {
         });
         getActivity().setSwitchColor(getActivity().getAccentColor(), swApplyTheme);
 
-        final LineColorPicker transparencyColorPicker = (LineColorPicker) dialogLayout.findViewById(R.id.pickerTransparent);
-        transparencyColorPicker.setColors(ColorPalette.getTransparencyShadows(getActivity().getPrimaryColor()));
-        transparencyColorPicker.setSelectedColor(ColorPalette.getTransparentColor(getActivity().getPrimaryColor(), 255 - Hawk.get(getActivity().getString(R.string.preference_transparency), 0)));
-
         /**TEXT VIEWS**/
         ((TextView) dialogLayout.findViewById(R.id.seek_bar_alpha_title)).setTextColor(getActivity().getTextColor());
         ((TextView) dialogLayout.findViewById(R.id.seek_bar_alpha_title_Sub)).setTextColor(getActivity().getSubTextColor());
@@ -65,10 +59,6 @@ public class SinglePhotoSetting extends ThemedSetting {
             public void onClick(DialogInterface dialog, int which) {
                 boolean applyTheme = swApplyTheme.isChecked();
                 Hawk.put(getActivity().getString(R.string.preference_apply_theme_pager), applyTheme);
-                if (applyTheme) {
-                    int c = Color.alpha(transparencyColorPicker.getColor());
-                    Hawk.put(getActivity().getString(R.string.preference_transparency), 255 - c);
-                }
                 getActivity().updateTheme();
             }
         });

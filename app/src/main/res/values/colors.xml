@@ -326,5 +326,6 @@
 
     <color name="transparent_black">#c4000000</color>
     <color name="transparent_md_amber_500">#99FFC107</color>
+    <color name="gray_color">#bfbeca</color>
 
 </resources>

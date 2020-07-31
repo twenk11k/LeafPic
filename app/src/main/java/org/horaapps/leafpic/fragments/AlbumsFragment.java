@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -13,6 +14,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,8 +28,10 @@ import android.widget.Toast;
 
 import com.mikepenz.google_material_typeface_library.GoogleMaterial;
 import com.orhanobut.hawk.Hawk;
+import com.squareup.haha.perflib.Main;
 
 import org.horaapps.leafpic.R;
+import org.horaapps.leafpic.activities.MainActivity;
 import org.horaapps.leafpic.adapters.AlbumsAdapter;
 import org.horaapps.leafpic.data.Album;
 import org.horaapps.leafpic.data.AlbumsHelper;
@@ -66,6 +70,8 @@ public class AlbumsFragment extends BaseMediaGridFragment {
 
     @BindView(R.id.albums) RecyclerView rv;
     @BindView(R.id.swipe_refresh) SwipeRefreshLayout refresh;
+    @BindView(R.id.toolbar)
+    Toolbar toolbar;
 
     private AlbumsAdapter adapter;
     private GridSpacingItemDecoration spacingDecoration;
@@ -130,6 +136,10 @@ public class AlbumsFragment extends BaseMediaGridFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        toolbar.setTitle("");
+        toolbar.setBackgroundColor(Color.BLACK);
+        ((MainActivity) getActivity()).setSupportActionBar(toolbar);
+
         displayAlbums();
     }
 
@@ -151,9 +161,7 @@ public class AlbumsFragment extends BaseMediaGridFragment {
     }
 
     public int columnsCount() {
-        return DeviceUtils.isPortrait(getResources())
-                ? Prefs.getFolderColumnsPortrait()
-                : Prefs.getFolderColumnsLandscape();
+        return 3;
     }
 
     @Override
@@ -212,48 +220,12 @@ public class AlbumsFragment extends BaseMediaGridFragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.grid_albums, menu);
-
-        menu.findItem(R.id.select_all).setIcon(ThemeHelper.getToolbarIcon(getContext(), GoogleMaterial.Icon.gmd_select_all));
-        menu.findItem(R.id.delete).setIcon(ThemeHelper.getToolbarIcon(getContext(), (GoogleMaterial.Icon.gmd_delete)));
-        menu.findItem(R.id.sort_action).setIcon(ThemeHelper.getToolbarIcon(getContext(),(GoogleMaterial.Icon.gmd_sort)));
-        menu.findItem(R.id.search_action).setIcon(ThemeHelper.getToolbarIcon(getContext(), (GoogleMaterial.Icon.gmd_search)));
-
+        inflater.inflate(R.menu.menu_main_toolbar, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
-        boolean editMode = editMode();
-        boolean oneSelected = getSelectedCount() == 1;
-
-        menu.setGroupVisible(R.id.general_album_items, !editMode);
-        menu.setGroupVisible(R.id.edit_mode_items, editMode);
-        menu.setGroupVisible(R.id.one_selected_items, oneSelected);
-
-        menu.findItem(R.id.select_all).setTitle(
-                getSelectedCount() == getCount()
-                        ? R.string.clear_selected
-                        : R.string.select_all);
-
-        if (editMode) {
-            menu.findItem(R.id.hide).setTitle(hidden ? R.string.unhide : R.string.hide);
-        } else {
-            menu.findItem(R.id.ascending_sort_order).setChecked(sortingOrder() == SortingOrder.ASCENDING);
-            switch (sortingMode()) {
-                case NAME:  menu.findItem(R.id.name_sort_mode).setChecked(true); break;
-                case SIZE:  menu.findItem(R.id.size_sort_mode).setChecked(true); break;
-                case DATE: default:
-                    menu.findItem(R.id.date_taken_sort_mode).setChecked(true); break;
-                case NUMERIC:  menu.findItem(R.id.numeric_sort_mode).setChecked(true); break;
-            }
-        }
-
-        if (oneSelected) {
-            Album selectedAlbum = adapter.getFirstSelectedAlbum();
-            menu.findItem(R.id.pin_album).setTitle(selectedAlbum.isPinned() ? getString(R.string.un_pin) : getString(R.string.pin));
-            menu.findItem(R.id.clear_album_cover).setVisible(selectedAlbum.hasCover());
-        }
 
         super.onPrepareOptionsMenu(menu);
     }
@@ -263,178 +235,6 @@ public class AlbumsFragment extends BaseMediaGridFragment {
 
         Album selectedAlbum = adapter.getFirstSelectedAlbum();
         switch (item.getItemId()) {
-
-            case R.id.select_all:
-                if (adapter.getSelectedCount() == adapter.getItemCount())
-                    adapter.clearSelected();
-                else adapter.selectAll();
-                return true;
-
-            case R.id.pin_album:
-                if (selectedAlbum != null) {
-                    boolean b = selectedAlbum.togglePinAlbum();
-                    db().setPined(selectedAlbum.getPath(), b);
-                    adapter.clearSelected();
-                    adapter.sort();
-                }
-                return true;
-
-            case R.id.clear_album_cover:
-                if (selectedAlbum != null) {
-                    selectedAlbum.removeCoverAlbum();
-                    db().setCover(selectedAlbum.getPath(), null);
-                    adapter.clearSelected();
-                    adapter.notifyItemChanaged(selectedAlbum);
-                    // TODO: 4/5/17 updateui
-                    return true;
-                }
-
-                return false;
-
-            case R.id.hide:
-                final AlertDialog hideDialog = AlertDialogsHelper.getTextDialog(((ThemedActivity) getActivity()),
-                        hidden ? R.string.unhide : R.string.hide,
-                        hidden ? R.string.unhide_album_message : R.string.hide_album_message);
-
-                hideDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(hidden ? R.string.unhide : R.string.hide).toUpperCase(), (dialog, id) -> {
-                    ArrayList<String> hiddenPaths = AlbumsHelper.getLastHiddenPaths();
-
-                    for (Album album : adapter.getSelectedAlbums()) {
-                        if (hidden) { // unhide
-                            AlbumsHelper.unHideAlbum(album.getPath(), getContext());
-                            hiddenPaths.remove(album.getPath());
-                        } else { // hide
-                            AlbumsHelper.hideAlbum(album.getPath(), getContext());
-                            hiddenPaths.add(album.getPath());
-                        }
-                    }
-                    AlbumsHelper.saveLastHiddenPaths(hiddenPaths);
-                    adapter.removeSelectedAlbums();
-                    updateToolbar();
-                });
-
-                if (!hidden) {
-                    hideDialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.exclude).toUpperCase(), (dialog, which) -> {
-                        for (Album album : adapter.getSelectedAlbums()) {
-                            db().excludeAlbum(album.getPath());
-                            excuded.add(album.getPath());
-                        }
-                        adapter.removeSelectedAlbums();
-                    });
-                }
-                hideDialog.setButton(DialogInterface.BUTTON_NEGATIVE, this.getString(R.string.cancel).toUpperCase(), (dialogInterface, i) -> hideDialog.dismiss());
-                hideDialog.show();
-                return true;
-
-            case R.id.shortcut:
-                AlbumsHelper.createShortcuts(getContext(), adapter.getSelectedAlbums());
-                adapter.clearSelected();
-                return true;
-
-            case R.id.name_sort_mode:
-                adapter.changeSortingMode(SortingMode.NAME);
-                AlbumsHelper.setSortingMode(SortingMode.NAME);
-                item.setChecked(true);
-                return true;
-
-            case R.id.date_taken_sort_mode:
-                adapter.changeSortingMode(SortingMode.DATE);
-                AlbumsHelper.setSortingMode(SortingMode.DATE);
-                item.setChecked(true);
-                return true;
-
-            case R.id.size_sort_mode:
-                adapter.changeSortingMode(SortingMode.SIZE);
-                AlbumsHelper.setSortingMode(SortingMode.SIZE);
-                item.setChecked(true);
-                return true;
-
-            case R.id.numeric_sort_mode:
-                adapter.changeSortingMode(SortingMode.NUMERIC);
-                AlbumsHelper.setSortingMode(SortingMode.NUMERIC);
-                item.setChecked(true);
-                return true;
-
-            case R.id.ascending_sort_order:
-                item.setChecked(!item.isChecked());
-                SortingOrder sortingOrder = SortingOrder.fromValue(item.isChecked());
-                adapter.changeSortingOrder(sortingOrder);
-                AlbumsHelper.setSortingOrder(sortingOrder);
-                return true;
-
-            case R.id.exclude:
-                final AlertDialog.Builder excludeDialogBuilder = new AlertDialog.Builder(getActivity(), getDialogStyle());
-
-                final View excludeDialogLayout = LayoutInflater.from(getContext()).inflate(R.layout.dialog_exclude, null);
-                TextView textViewExcludeTitle = excludeDialogLayout.findViewById(R.id.text_dialog_title);
-                TextView textViewExcludeMessage = excludeDialogLayout.findViewById(R.id.text_dialog_message);
-                final Spinner spinnerParents = excludeDialogLayout.findViewById(R.id.parents_folder);
-
-                spinnerParents.getBackground().setColorFilter(getIconColor(), PorterDuff.Mode.SRC_ATOP);
-
-                ((CardView) excludeDialogLayout.findViewById(R.id.message_card)).setCardBackgroundColor(getCardBackgroundColor());
-                textViewExcludeTitle.setBackgroundColor(getPrimaryColor());
-                textViewExcludeTitle.setText(getString(R.string.exclude));
-
-                if(adapter.getSelectedCount() > 1) {
-                    textViewExcludeMessage.setText(R.string.exclude_albums_message);
-                    spinnerParents.setVisibility(View.GONE);
-                } else {
-                    textViewExcludeMessage.setText(R.string.exclude_album_message);
-                    spinnerParents.setAdapter(getThemeHelper().getSpinnerAdapter(adapter.getFirstSelectedAlbum().getParentsFolders()));
-                }
-
-                textViewExcludeMessage.setTextColor(getTextColor());
-                excludeDialogBuilder.setView(excludeDialogLayout);
-
-                excludeDialogBuilder.setPositiveButton(this.getString(R.string.exclude).toUpperCase(), (dialog, id) -> {
-
-                    if (adapter.getSelectedCount() > 1) {
-                        for (Album album : adapter.getSelectedAlbums()) {
-                            db().excludeAlbum(album.getPath());
-                            excuded.add(album.getPath());
-                        }
-                        adapter.removeSelectedAlbums();
-
-                    } else {
-                        String path = spinnerParents.getSelectedItem().toString();
-                        db().excludeAlbum(path);
-                        excuded.add(path);
-                        adapter.removeAlbumsThatStartsWith(path);
-                        adapter.forceSelectedCount(0);
-                    }
-                    updateToolbar();
-                });
-                excludeDialogBuilder.setNegativeButton(this.getString(R.string.cancel).toUpperCase(), null);
-                excludeDialogBuilder.show();
-                return true;
-
-            case R.id.delete:
-
-                final AlertDialog alertDialog = AlertDialogsHelper.getTextDialog(((ThemedActivity) getActivity()), R.string.delete, R.string.delete_album_message);
-
-                alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, this.getString(R.string.cancel).toUpperCase(), (dialogInterface, i) -> alertDialog.dismiss());
-
-                alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, this.getString(R.string.delete).toUpperCase(), (dialog1, id) -> {
-                    if (Security.isPasswordOnDelete()) {
-
-                        Security.authenticateUser(((ThemedActivity) getActivity()), new Security.AuthCallBack() {
-                            @Override
-                            public void onAuthenticated() {
-                                showDeleteBottomSheet();
-                            }
-
-                            @Override
-                            public void onError() {
-                                Toast.makeText(getContext(), R.string.wrong_password, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else {
-                        showDeleteBottomSheet();
-                    }
-                });
-                alertDialog.show();
-                return true;
 
         }
 
@@ -496,16 +296,13 @@ public class AlbumsFragment extends BaseMediaGridFragment {
         getActivity().invalidateOptionsMenu();
     }
 
-    @Override
-    public void onSelectionCountChanged(int selectionCount, int totalCount) {
-        getEditModeListener().onItemsSelected(selectionCount, totalCount);
-    }
 
     @Override
     public void refreshTheme(ThemeHelper t) {
-        rv.setBackgroundColor(t.getBackgroundColor());
+        rv.setBackgroundColor(Color.BLACK);
         adapter.refreshTheme(t);
-        refresh.setColorSchemeColors(t.getAccentColor());
+
+         refresh.setColorSchemeColors(t.getAccentColor());
         refresh.setProgressBackgroundColorSchemeColor(t.getBackgroundColor());
     }
 }

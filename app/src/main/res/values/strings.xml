@@ -414,5 +414,6 @@
     <string name="timeline_grouping_menu_week">Week</string>
     <string name="timeline_grouping_menu_month">Month</string>
     <string name="timeline_grouping_menu_year">Year</string>
+    <string name="photos">Photos</string>
 
 </resources>

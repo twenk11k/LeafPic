@@ -1,6 +1,7 @@
 package org.horaapps.leafpic.adapters;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -209,9 +210,7 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
         this.selectedCount = c;
 
         if (this.selectedCount == 0) stopSelection();
-        else {
-            this.actionsListener.onSelectionCountChanged(selectedCount, albums.size());
-        }
+
     }
 
     public boolean clearSelected() {
@@ -255,7 +254,6 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
 
     private void notifySelected(boolean increase) {
         selectedCount += increase ? 1 : -1;
-        actionsListener.onSelectionCountChanged(selectedCount, getItemCount());
 
         if (selectedCount == 0 && isSelecting) stopSelection();
         else if (selectedCount > 0 && !isSelecting) startSelection();
@@ -293,8 +291,7 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
         if (accentColor == getThemeHelper().getPrimaryColor())
             accentColor = ColorPalette.getDarkerColor(accentColor);
 
-        int textColor = getThemeHelper().getColor(getThemeHelper().getBaseTheme().equals(Theme.LIGHT) ? R.color.md_album_color_2 : R.color.md_album_color);
-
+        int textColor = Color.WHITE;
         if (a.isSelected())
             textColor = getThemeHelper().getColor(R.color.md_album_color);
 
@@ -302,7 +299,7 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
 
         holder.llCount.setVisibility(Prefs.showMediaCount() ? View.VISIBLE : View.GONE);
         holder.name.setText(StringUtils.htmlFormat(a.getName(), textColor, false, true));
-        holder.nMedia.setText(StringUtils.htmlFormat(String.valueOf(a.getCount()), accentColor, true, false));
+        holder.nMedia.setText(StringUtils.htmlFormat(String.valueOf(a.getCount()), textColor, false, false));
         holder.path.setVisibility(Prefs.showAlbumPath() ? View.VISIBLE : View.GONE);
         holder.path.setText(a.getPath());
 
@@ -314,18 +311,9 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
         //holder.card.animate().alpha(1).setDuration(250);
 
         holder.card.setOnClickListener(v -> {
-            if (selecting()) {
-                notifySelected(a.toggleSelected());
-                notifyItemChanged(position);
-            } else
-                actionsListener.onItemSelected(position);
         });
 
-        holder.card.setOnLongClickListener(v -> {
-            notifySelected(a.toggleSelected());
-            notifyItemChanged(position);
-            return true;
-        });
+        holder.card.setOnLongClickListener(v -> true);
     }
 
     public void clear() {
@@ -380,7 +368,7 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
         public void refreshTheme(ThemeHelper theme, CardViewStyle cvs, boolean selected) {
 
             if (selected) {
-                footer.setBackgroundColor(theme.getPrimaryColor());
+                footer.setBackgroundColor(Color.BLACK);
                 picture.setColorFilter(0x77000000, PorterDuff.Mode.SRC_ATOP);
                 selectedIcon.setVisibility(View.VISIBLE);
                 selectedIcon.setColor(theme.getPrimaryColor());
@@ -389,15 +377,14 @@ public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
                 selectedIcon.setVisibility(View.GONE);
                 switch (cvs) {
                     default: case MATERIAL:
-                        footer.setBackgroundColor(theme.getCardBackgroundColor());
-                        break;
+                        footer.setBackgroundColor(Color.BLACK);
                     case FLAT: case COMPACT:
-                        footer.setBackgroundColor(ColorPalette.getTransparentColor(theme.getBackgroundColor(), 150));
+                        footer.setBackgroundColor(Color.BLACK);
                         break;
                 }
             }
 
-            path.setTextColor(theme.getSubTextColor());
+            path.setTextColor(Color.WHITE);
         }
 
         @Override

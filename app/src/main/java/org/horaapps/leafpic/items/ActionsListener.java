@@ -24,11 +24,4 @@ public interface ActionsListener {
      */
     void onSelectMode(boolean selectMode);
 
-    /**
-     * Used to notify listeners about selection counts.
-     *
-     * @param selectionCount The number of selected items
-     * @param totalCount     The number of total items
-     */
-    void onSelectionCountChanged(int selectionCount, int totalCount);
 }

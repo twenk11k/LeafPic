@@ -12,14 +12,6 @@ import org.horaapps.leafpic.items.ActionsListener
  */
 abstract class BaseMediaGridFragment : BaseFragment(), IFragment, ActionsListener {
 
-    lateinit var editModeListener: EditModeListener
-
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-        if (context is EditModeListener) editModeListener = context
-        else throw RuntimeException("Parent must implement Edit Mode Listener!")
-    }
-
     fun onBackPressed() = when (editMode()) {
         true -> {
             exitContextMenu()
@@ -40,13 +32,6 @@ abstract class BaseMediaGridFragment : BaseFragment(), IFragment, ActionsListene
      * Update the Toolbar for switching between Edit Mode.
      */
     protected fun updateToolbar() {
-        editModeListener.changedEditMode(
-                editMode(),
-                getSelectedCount(),
-                getTotalCount(),
-                getToolbarButtonListener(editMode()),
-                getToolbarTitle())
-
         // Refresh the Toolbar menu
         activity?.invalidateOptionsMenu()
     }

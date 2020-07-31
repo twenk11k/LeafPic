@@ -108,7 +108,6 @@ public class TimelineAdapter extends ThemedAdapter<TimelineViewHolder> {
         }
 
         notifyDataSetChanged();
-        actionsListener.onSelectionCountChanged(selectedPositions.size(), mediaItems.size());
     }
 
     /**
@@ -230,7 +229,6 @@ public class TimelineAdapter extends ThemedAdapter<TimelineViewHolder> {
 
         if (oldCount == 0 && isSelecting()) actionsListener.onSelectMode(true);
         else if (oldCount == 1 && !isSelecting()) actionsListener.onSelectMode(false);
-        else actionsListener.onSelectionCountChanged(selectedPositions.size(), mediaItems.size());
 
         notifyItemChanged(elementPos);
     }
@@ -254,7 +252,6 @@ public class TimelineAdapter extends ThemedAdapter<TimelineViewHolder> {
                     notifyItemChanged(index);
                 }
             }
-            actionsListener.onSelectionCountChanged(selectedPositions.size(), mediaItems.size());
         }
     }
 

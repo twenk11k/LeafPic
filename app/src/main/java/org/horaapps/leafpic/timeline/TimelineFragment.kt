@@ -289,8 +289,6 @@ class TimelineFragment : BaseMediaGridFragment(), ActionsListener {
 
     override fun onSelectMode(selectMode: Boolean) = updateToolbar()
 
-    override fun onSelectionCountChanged(selectionCount: Int, totalCount: Int) = editModeListener.onItemsSelected(selectionCount, totalCount)
-
     override fun getSelectedCount() = timelineAdapter.selectedCount
 
     override fun getTotalCount() = timelineAdapter.mediaCount

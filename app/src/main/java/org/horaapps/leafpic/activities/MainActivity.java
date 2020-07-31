@@ -1,8 +1,7 @@
 package org.horaapps.leafpic.activities;
 
+import android.annotation.TargetApi;
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -21,7 +20,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -51,6 +49,7 @@ import org.horaapps.leafpic.util.Security;
 import org.horaapps.leafpic.util.StringUtils;
 import org.horaapps.leafpic.util.preferences.Prefs;
 import org.horaapps.leafpic.views.navigation_drawer.NavigationDrawer;
+import org.horaapps.liz.ColorPalette;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -75,7 +74,7 @@ import static org.horaapps.leafpic.views.navigation_drawer.NavigationDrawer.Navi
  */
 public class MainActivity extends SharedMediaActivity implements
         MediaClickListener, AlbumsFragment.AlbumClickListener,
-        NothingToShowListener, EditModeListener, ItemListener {
+        NothingToShowListener {
 
     public static final String ARGS_PICK_MODE = "pick_mode";
 
@@ -86,12 +85,6 @@ public class MainActivity extends SharedMediaActivity implements
         int MODE_MEDIA = 1002;
         int MODE_TIMELINE = 1003;
     }
-
-    @BindView(R.id.fab_camera) FloatingActionButton fab;
-    @BindView(R.id.drawer_layout) DrawerLayout navigationDrawer;
-    @BindView(R.id.home_navigation_drawer) NavigationDrawer navigationDrawerView;
-    @BindView(R.id.toolbar) Toolbar toolbar;
-    @BindView(R.id.coordinator_main_layout) CoordinatorLayout mainLayout;
 
     private AlbumsFragment albumsFragment;
     private RvMediaFragment rvMediaFragment;
@@ -108,7 +101,6 @@ public class MainActivity extends SharedMediaActivity implements
         setContentView(R.layout.activity_main);
         unbinder = ButterKnife.bind(this);
 
-        initUi();
         pickMode = getIntent().getBooleanExtra(ARGS_PICK_MODE, false);
 
         if (savedInstanceState == null) {
@@ -133,8 +125,6 @@ public class MainActivity extends SharedMediaActivity implements
                 albumsFragment = (AlbumsFragment) getSupportFragmentManager().findFragmentByTag(AlbumsFragment.TAG);
                 break;
 
-            case FragmentMode.MODE_TIMELINE:
-                setupUiForTimeline();
         }
     }
 
@@ -163,7 +153,6 @@ public class MainActivity extends SharedMediaActivity implements
 
     private void displayAlbums(boolean hidden) {
         fragmentMode = FragmentMode.MODE_ALBUMS;
-        unlockNavigationDrawer();
         if (albumsFragment == null) initAlbumsFragment();
         albumsFragment.displayAlbums(hidden);
         setContentFragment();
@@ -174,7 +163,6 @@ public class MainActivity extends SharedMediaActivity implements
         rvMediaFragment = RvMediaFragment.make(album);
 
         fragmentMode = FragmentMode.MODE_MEDIA;
-        lockNavigationDrawer();
 
         rvMediaFragment.setListener(this);
 
@@ -197,7 +185,6 @@ public class MainActivity extends SharedMediaActivity implements
                 .addToBackStack(null)
                 .commit();
 
-        setupUiForTimeline();
     }
 
     @Override
@@ -242,40 +229,12 @@ public class MainActivity extends SharedMediaActivity implements
         enableNothingToSHowPlaceHolder(nothingToShow);
     }
 
-    @Override
-    public void changedEditMode(boolean editMode, int selected, int total, @Nullable View.OnClickListener listener, @Nullable String title) {
-        if (editMode) {
-            updateToolbar(
-                    getString(R.string.toolbar_selection_count, selected, total),
-                    GoogleMaterial.Icon.gmd_check, listener);
-        } else if (inAlbumMode()) {
-            showDefaultToolbar();
-        } else {
-            updateToolbar(title, GoogleMaterial.Icon.gmd_arrow_back, v -> goBackToAlbums());
-        }
-    }
-
-    @Override
-    public void onItemsSelected(int count, int total) {
-        toolbar.setTitle(getString(R.string.toolbar_selection_count, count, total));
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        fab.setVisibility(View.VISIBLE);
-        fab.animate().translationY(fab.getHeight() * 2).start();
-        
-    }
 
     public void goBackToAlbums() {
         unreferenceFragments();
         fragmentMode = FragmentMode.MODE_ALBUMS;
-        unlockNavigationDrawer();
         getSupportFragmentManager().popBackStack();
         albumsFragment = (AlbumsFragment) getSupportFragmentManager().findFragmentByTag(AlbumsFragment.TAG);
-        selectNavigationItem(NAVIGATION_ITEM_ALL_ALBUMS);
-        showDefaultToolbar();
     }
 
     private void unreferenceFragments() {
@@ -287,95 +246,32 @@ public class MainActivity extends SharedMediaActivity implements
         albumsFragment = null;
     }
 
-    private void initUi() {
-        setSupportActionBar(toolbar);
-        setupNavigationDrawer();
-        setupFAB();
-    }
-
-    private void setupNavigationDrawer() {
-        ActionBarDrawerToggle drawerToggle = new ActionBarDrawerToggle
-                (this, navigationDrawer, toolbar,
-                        R.string.drawer_open, R.string.drawer_close);
-
-        navigationDrawer.addDrawerListener(drawerToggle);
-        drawerToggle.syncState();
-
-        navigationDrawerView.setListener(this);
-        navigationDrawerView.setAppVersion(BuildConfig.VERSION_NAME);
-    }
-
-    private void setupFAB() {
-        fab.setImageDrawable(new IconicsDrawable(getApplicationContext()).icon(GoogleMaterial.Icon.gmd_camera_alt).color(Color.WHITE));
-        fab.setOnClickListener(v -> startActivity(new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)));
-    }
-
-    private void closeDrawer() {
-        navigationDrawer.closeDrawer(GravityCompat.START);
-    }
-
-    private void askPassword() {
-
-        Security.authenticateUser(MainActivity.this, new Security.AuthCallBack() {
-            @Override
-            public void onAuthenticated() {
-                closeDrawer();
-                selectNavigationItem(NAVIGATION_ITEM_HIDDEN_FOLDERS);
-                displayAlbums(true);
-            }
-
-            @Override
-            public void onError() {
-                Toast.makeText(getApplicationContext(), R.string.wrong_password, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    @Override
-    protected void onPostResume() {
-        super.onPostResume();
-
-        new Thread(() -> {
-            if (Prefs.getLastVersionCode() < BuildConfig.VERSION_CODE) {
-                String titleHtml = String.format(Locale.ENGLISH, "<font color='%d'>%s <b>%s</b></font>", getTextColor(), getString(R.string.changelog), BuildConfig.VERSION_NAME),
-                        buttonHtml = String.format(Locale.ENGLISH, "<font color='%d'>%s</font>", getAccentColor(), getString(R.string.view).toUpperCase());
-                Snackbar snackbar = Snackbar
-                        .make(mainLayout, StringUtils.html(titleHtml), Snackbar.LENGTH_LONG)
-                        .setAction(StringUtils.html(buttonHtml), view -> AlertDialogsHelper.showChangelogDialog(MainActivity.this));
-                View snackbarView = snackbar.getView();
-                snackbarView.setBackgroundColor(getBackgroundColor());
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-                    snackbarView.setElevation(getResources().getDimension(R.dimen.snackbar_elevation));
-                snackbar.show();
-                Prefs.setLastVersionCode(BuildConfig.VERSION_CODE);
-            }
-        }).start();
-    }
-
     @CallSuper
     @Override
     public void updateUiElements() {
         super.updateUiElements();
         //TODO: MUST BE FIXED
-        toolbar.setPopupTheme(getPopupToolbarStyle());
-        toolbar.setBackgroundColor(getPrimaryColor());
 
         /**** SWIPE TO REFRESH ****/
 
         setStatusBarColor();
         setNavBarColor();
 
-        fab.setBackgroundTintList(ColorStateList.valueOf(getAccentColor()));
-        fab.setVisibility(Hawk.get(getString(R.string.preference_show_fab), false) ? View.VISIBLE : View.GONE);
-        mainLayout.setBackgroundColor(getBackgroundColor());
-
 //        setScrollViewColor(navigationDrawerView);
         setAllScrollbarsColor();
 
-        navigationDrawerView.setTheme(getPrimaryColor(), getBackgroundColor(), getTextColor(), getIconColor());
-
         // TODO Calvin: This performs a NO-OP. Find out what this is used for
         setRecentApp(getString(R.string.app_name));
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    protected void setStatusBarColor() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (isTranslucentStatusBar())
+                getWindow().setStatusBarColor(ColorPalette.getObscuredColor(Color.BLACK));
+            else
+                getWindow().setStatusBarColor(Color.BLACK);
+        }
     }
 
     private void setAllScrollbarsColor() {
@@ -383,17 +279,7 @@ public class MainActivity extends SharedMediaActivity implements
         drawableScrollBar.setColorFilter(new PorterDuffColorFilter(getPrimaryColor(), PorterDuff.Mode.SRC_ATOP));
     }
 
-    private void updateToolbar(String title, IIcon icon, View.OnClickListener onClickListener) {
-        toolbar.setTitle(title);
-        toolbar.setNavigationIcon(getToolbarIcon(icon));
-        toolbar.setNavigationOnClickListener(onClickListener);
-    }
-
-    private void showDefaultToolbar() {
-        updateToolbar(
-                getString(R.string.app_name),
-                GoogleMaterial.Icon.gmd_menu,
-                v -> navigationDrawer.openDrawer(GravityCompat.START));
+    private void doNothing() {
     }
 
     public void enableNothingToSHowPlaceHolder(boolean status) {
@@ -414,14 +300,6 @@ public class MainActivity extends SharedMediaActivity implements
             findViewById(R.id.nothing_to_show_placeholder).setVisibility(View.GONE);
         }
     }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        navigationDrawerView.refresh();
-    }
-
-    /**region MENU */
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -535,8 +413,7 @@ public class MainActivity extends SharedMediaActivity implements
     public void onBackPressed() {
         if (inAlbumMode()) {
             if (!albumsFragment.onBackPressed()) {
-                if (navigationDrawer.isDrawerOpen(GravityCompat.START)) closeDrawer();
-                else finish();
+                finish();
             }
 
         } else if (inTimelineMode() && !timelineFragment.onBackPressed()) {
@@ -552,60 +429,6 @@ public class MainActivity extends SharedMediaActivity implements
         displayMedia(album);
     }
 
-    public void onItemSelected(@NavigationItem int navigationItemSelected) {
-        closeDrawer();
-        switch (navigationItemSelected) {
-
-            case NAVIGATION_ITEM_ALL_ALBUMS:
-                displayAlbums(false);
-                selectNavigationItem(navigationItemSelected);
-                break;
-
-            case NAVIGATION_ITEM_ALL_MEDIA:
-                displayMedia(Album.getAllMediaAlbum());
-                break;
-
-            case NAVIGATION_ITEM_TIMELINE:
-                displayTimeline(Album.getAllMediaAlbum());
-                selectNavigationItem(navigationItemSelected);
-                break;
-
-            case NAVIGATION_ITEM_HIDDEN_FOLDERS:
-                if (Security.isPasswordOnHidden()) {
-                    askPassword();
-                } else {
-                    selectNavigationItem(navigationItemSelected);
-                    displayAlbums(true);
-                }
-                break;
-
-            case NAVIGATION_ITEM_WALLPAPERS:
-                Toast.makeText(MainActivity.this, "Coming Soon!", Toast.LENGTH_SHORT).show();
-                break;
-
-            case NAVIGATION_ITEM_DONATE:
-                DonateActivity.startActivity(this);
-                break;
-
-            case NavigationDrawer.NAVIGATION_ITEM_AFFIX:
-                Intent i = new Intent(getBaseContext(), AffixActivity.class);
-                startActivity(i);
-                //   AffixActivity.startActivity(this);
-                break;
-            case NAVIGATION_ITEM_SETTINGS:
-                SettingsActivity.startActivity(this);
-                break;
-
-            case NAVIGATION_ITEM_ABOUT:
-                AboutActivity.startActivity(this);
-                break;
-        }
-    }
-
-    private void selectNavigationItem(@NavigationItem int navItem) {
-        navigationDrawerView.selectNavItem(navItem);
-    }
-
     private boolean inAlbumMode() {
         return fragmentMode == FragmentMode.MODE_ALBUMS;
     }
@@ -618,16 +441,4 @@ public class MainActivity extends SharedMediaActivity implements
         return fragmentMode == FragmentMode.MODE_TIMELINE;
     }
 
-    private void lockNavigationDrawer() {
-        navigationDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-    }
-
-    private void unlockNavigationDrawer() {
-        navigationDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-    }
-
-    private void setupUiForTimeline() {
-        lockNavigationDrawer();
-        updateToolbar(getString(R.string.timeline_toolbar_title), GoogleMaterial.Icon.gmd_arrow_back, v -> goBackToAlbums());
-    }
 }

@@ -649,12 +649,7 @@ public class RvMediaFragment extends BaseMediaGridFragment {
         updateToolbar();
         getActivity().invalidateOptionsMenu();
     }
-
-    @Override
-    public void onSelectionCountChanged(int selectionCount, int totalCount) {
-        getEditModeListener().onItemsSelected(selectionCount, totalCount);
-    }
-
+    
     @Override
     public boolean clearSelected() {
         return adapter.clearSelected();

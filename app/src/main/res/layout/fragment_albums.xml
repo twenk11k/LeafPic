@@ -1,17 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v4.widget.SwipeRefreshLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/swipe_refresh"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/md_black_1000">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/albums"
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center_horizontal"
-        android:clipToPadding="false"
-        android:scrollbars="vertical"
-        android:scrollbarThumbVertical="@drawable/ic_scrollbar" />
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        android:elevation="2dp"
+        android:theme="@style/ThemeOverlay.MaterialComponents.ActionBar"
+        />
 
-</android.support.v4.widget.SwipeRefreshLayout>
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintGuide_percent="0.04" />
+
+    <TextView
+        android:id="@+id/text_photos"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:text="@string/photos"
+        android:textColor="@color/md_white_1000"
+        android:textSize="28sp"
+        android:fontFamily="@font/acre_medium"
+        android:letterSpacing="0.03"
+        android:elevation="3dp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@+id/guideline"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="25dp"
+        app:layout_constraintTop_toBottomOf="@+id/text_photos">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/albums"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center_horizontal"
+            android:clipToPadding="false"
+            android:scrollbarThumbVertical="@drawable/ic_scrollbar"
+            android:scrollbars="vertical" />
+
+    </android.support.v4.widget.SwipeRefreshLayout>
+
+</android.support.constraint.ConstraintLayout>
